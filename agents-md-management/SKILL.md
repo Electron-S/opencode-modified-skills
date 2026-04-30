@@ -1,6 +1,6 @@
 ---
 name: agents-md-management
-description: opencode 프로젝트의 AGENTS.md 파일을 관리한다. 두 가지 경우에 사용한다: (1) 현재 세션에서 배운 내용을 AGENTS.md에 저장할 때 ("저장해", "기록해", "배운 거 남겨", "AGENTS.md 업데이트해"), (2) 저장소 전체의 AGENTS.md 파일을 감사하고 개선할 때 ("점검해", "감사해", "AGENTS.md 어때", "개선해줘"). "AGENTS.md 관리" 또는 "opencode 프로젝트 메모리 최적화" 요청에도 트리거된다.
+description: "opencode 프로젝트의 AGENTS.md 파일을 관리한다. 두 가지 경우에 사용한다: (1) 현재 세션에서 배운 내용을 AGENTS.md에 저장할 때 (저장해, 기록해, 배운 거 남겨, AGENTS.md 업데이트해), (2) 저장소 전체의 AGENTS.md 파일을 감사하고 개선할 때 (점검해, 감사해, AGENTS.md 어때, 개선해줘). AGENTS.md 관리 또는 opencode 프로젝트 메모리 최적화 요청에도 트리거된다."
 ---
 
 # AGENTS.md 관리
