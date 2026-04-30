@@ -1,31 +1,32 @@
 # opencode-modified-skills
 
-Claude Code용으로 만들어진 [Anthropic Skills](https://github.com/anthropics/skills)를 OpenCode에서 동작하도록 수정한 모음입니다.
+[Anthropic Skills](https://github.com/anthropics/skills)를 [OpenCode](https://github.com/sst/opencode)에서 동작하도록 수정한 모음입니다.
 
 ## 배경
 
-Anthropic의 공식 스킬들은 Claude Code CLI(`claude -p`)에 의존하는 부분이 있어 OpenCode에서 그대로 사용할 수 없습니다. 이 레포는 해당 의존성을 `opencode run`으로 교체하고 OpenCode의 디렉토리 구조에 맞게 수정한 버전을 관리합니다.
+Anthropic 공식 스킬들은 일부 기능이 Claude Code CLI(`claude -p`)에 의존하고 있어 OpenCode에서 그대로 사용할 수 없습니다. 이 레포는 해당 의존성을 `opencode run`으로 교체하고, OpenCode의 디렉토리 구조 및 툴명에 맞게 수정한 버전을 관리합니다.
 
 ## 포함된 스킬
 
 | 스킬 | 원본 | 주요 변경 사항 |
 |---|---|---|
-| [skill-creator](./skill-creator/) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | `claude -p` → `opencode run`, `.claude/` → `.opencode/` 경로 수정, SKILL.md OpenCode 섹션 추가 |
-| [doc-coauthoring](./doc-coauthoring/) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/doc-coauthoring) | `create_file` → `Write`, `str_replace` → `Edit`, Claude.ai URL/커넥터 → OpenCode MCP 서버 안내로 수정 |
+| [skill-creator](./skill-creator/) | [원본](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | `claude -p` → `opencode run --format json`, `.claude/` → `.opencode/` 경로 수정, SKILL.md OpenCode 섹션 추가 |
+| [doc-coauthoring](./doc-coauthoring/) | [원본](https://github.com/anthropics/skills/tree/main/skills/doc-coauthoring) | `create_file` → `Write`, `str_replace` → `Edit`, Claude.ai 참조 → OpenCode/MCP 기준으로 수정 |
 
 ## 설치 방법
 
-각 스킬 폴더를 `~/.config/opencode/skills/` 아래에 복사하면 됩니다.
-
-**전체 설치:**
 ```bash
-git clone https://github.com/<your-username>/opencode-modified-skills.git
-cp -r opencode-modified-skills/skill-creator ~/.config/opencode/skills/
+git clone https://github.com/cyyoo/opencode-modified-skills.git
 ```
 
-**특정 스킬만 설치:**
+원하는 스킬 폴더를 `~/.config/opencode/skills/` 아래에 복사합니다.
+
 ```bash
+# 예시: skill-creator 설치
 cp -r opencode-modified-skills/skill-creator ~/.config/opencode/skills/skill-creator
+
+# 예시: doc-coauthoring 설치
+cp -r opencode-modified-skills/doc-coauthoring ~/.config/opencode/skills/doc-coauthoring
 ```
 
 ## 사용 방법
@@ -36,10 +37,18 @@ cp -r opencode-modified-skills/skill-creator ~/.config/opencode/skills/skill-cre
 스킬 새로 하나 만들고 싶어.
 ```
 
-## 스킬 추가 방법
+```
+이 기능 명세서 같이 작성해줘.
+```
 
-1. `skills/` 아래에 원본 스킬 폴더를 복사
-2. `scripts/run_eval.py` — `claude -p` → `opencode run --format json` 교체, `.claude/` → `.opencode/` 경로 수정
-3. `scripts/improve_description.py` — `claude -p` → `opencode run --format json` 교체
-4. `SKILL.md` — `--model` 포맷을 `provider/model-name`으로 수정, Claude.ai/Cowork 섹션을 OpenCode 섹션으로 교체
-5. README 테이블에 추가
+## 새 스킬 추가 가이드
+
+다른 Anthropic 스킬을 이 레포에 추가하려면:
+
+1. 원본 스킬 폴더를 레포 루트에 복사
+2. `scripts/run_eval.py` — `claude -p` → `opencode run --format json`, `.claude/` → `.opencode/` 경로 수정, JSON 파싱 로직 교체
+3. `scripts/improve_description.py` — `claude -p` → `opencode run --format json`
+4. `SKILL.md` — `--model` 포맷을 `provider/model-name`으로, Claude.ai/Cowork 섹션을 OpenCode 기준으로 교체
+5. 이 README 테이블에 항목 추가
+
+스크립트가 없는 스킬(SKILL.md만 있는 경우)은 툴명(`create_file`→`Write`, `str_replace`→`Edit`)과 Claude.ai URL 참조만 수정하면 됩니다.
