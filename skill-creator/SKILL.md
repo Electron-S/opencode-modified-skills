@@ -1,212 +1,210 @@
 ---
 name: skill-creator
-description: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+description: 새 스킬을 만들고, 기존 스킬을 수정 및 개선하고, 스킬 성능을 측정한다. 유저가 스킬을 처음부터 만들거나, 기존 스킬을 편집/최적화하거나, 평가를 실행해 스킬을 테스트하거나, 성능 벤치마크 및 분산 분석을 하거나, 더 나은 트리거 정확도를 위해 스킬 설명을 최적화하고 싶을 때 사용한다.
 ---
 
-# Skill Creator
+# 스킬 제작자
 
-A skill for creating new skills and iteratively improving them.
+새 스킬을 만들고 반복적으로 개선하는 스킬이다.
 
-At a high level, the process of creating a skill goes like this:
+전체적인 스킬 제작 프로세스는 다음과 같다:
 
-- Decide what you want the skill to do and roughly how it should do it
-- Write a draft of the skill
-- Create a few test prompts and run claude-with-access-to-the-skill on them
-- Help the user evaluate the results both qualitatively and quantitatively
-  - While the runs happen in the background, draft some quantitative evals if there aren't any (if there are some, you can either use as is or modify if you feel something needs to change about them). Then explain them to the user (or if they already existed, explain the ones that already exist)
-  - Use the `eval-viewer/generate_review.py` script to show the user the results for them to look at, and also let them look at the quantitative metrics
-- Rewrite the skill based on feedback from the user's evaluation of the results (and also if there are any glaring flaws that become apparent from the quantitative benchmarks)
-- Repeat until you're satisfied
-- Expand the test set and try again at larger scale
+- 스킬이 무엇을 할지, 대략 어떻게 할지 결정
+- 스킬 초안 작성
+- 몇 가지 테스트 프롬프트를 만들고 스킬에 접근하는 AI로 실행
+- 유저가 결과를 정성적, 정량적으로 평가하도록 돕기
+  - 실행이 백그라운드에서 진행되는 동안 정량적 평가를 초안 작성 (아직 없는 경우). 그런 다음 유저에게 설명 (이미 있다면 기존 것을 설명)
+  - `eval-viewer/generate_review.py` 스크립트를 사용해 유저에게 결과를 보여주고 정량적 지표도 볼 수 있게 함
+- 유저의 평가 피드백(과 정량적 벤치마크에서 드러나는 명백한 결함)을 바탕으로 스킬 재작성
+- 만족할 때까지 반복
+- 테스트 세트를 확장하고 더 큰 규모에서 다시 시도
 
-Your job when using this skill is to figure out where the user is in this process and then jump in and help them progress through these stages. So for instance, maybe they're like "I want to make a skill for X". You can help narrow down what they mean, write a draft, write the test cases, figure out how they want to evaluate, run all the prompts, and repeat.
+이 스킬을 사용할 때의 역할은 유저가 이 프로세스의 어디에 있는지 파악하고 각 단계를 진행하는 데 도움을 주는 것이다. 예를 들어 "X를 위한 스킬을 만들고 싶어"라고 하면 의미를 좁히고, 초안을 작성하고, 테스트 케이스를 작성하고, 평가 방법을 결정하고, 모든 프롬프트를 실행하고 반복할 수 있다.
 
-On the other hand, maybe they already have a draft of the skill. In this case you can go straight to the eval/iterate part of the loop.
+반면에 이미 스킬 초안이 있을 수도 있다. 이 경우 평가/반복 부분으로 바로 갈 수 있다.
 
-Of course, you should always be flexible and if the user is like "I don't need to run a bunch of evaluations, just vibe with me", you can do that instead.
+물론 항상 유연하게 유저가 "많은 평가를 실행할 필요 없어, 그냥 감으로 해줘"라고 하면 그렇게 할 수 있다.
 
-Then after the skill is done (but again, the order is flexible), you can also run the skill description improver, which we have a whole separate script for, to optimize the triggering of the skill.
+스킬이 완성된 후 (하지만 순서는 유연하다), 스킬 설명 최적화도 실행할 수 있다 — 이를 위한 별도의 스크립트가 있다.
 
-Cool? Cool.
+## 유저와의 소통
 
-## Communicating with the user
+스킬 제작자는 코딩 전문 지식이 다양한 사람들이 사용할 수 있다. 매우 최근에 시작된 추세가 있는데, Claude의 능력에 영감을 받아 배관공이 터미널을 열고, 부모와 조부모가 "npm 설치 방법"을 검색한다. 반면 유저의 대부분은 컴퓨터에 꽤 익숙한 사람들이다.
 
-The skill creator is liable to be used by people across a wide range of familiarity with coding jargon. If you haven't heard (and how could you, it's only very recently that it started), there's a trend now where the power of Claude is inspiring plumbers to open up their terminals, parents and grandparents to google "how to install npm". On the other hand, the bulk of users are probably fairly computer-literate.
+따라서 소통 방식을 이해하기 위해 컨텍스트 단서에 주의를 기울인다! 기본적으로 참고로:
 
-So please pay attention to context cues to understand how to phrase your communication! In the default case, just to give you some idea:
+- "평가"와 "벤치마크"는 경계선상이지만 괜찮다
+- "JSON"과 "어설션"은 유저가 그것들을 알고 있다는 진지한 단서를 보기 전에 설명 없이 사용하지 않는다
 
-- "evaluation" and "benchmark" are borderline, but OK
-- for "JSON" and "assertion" you want to see serious cues from the user that they know what those things are before using them without explaining them
-
-It's OK to briefly explain terms if you're in doubt, and feel free to clarify terms with a short definition if you're unsure if the user will get it.
+의심스럽다면 용어를 간략하게 설명하고, 유저가 이해할지 확실하지 않으면 짧은 정의로 용어를 명확히 하는 것도 좋다.
 
 ---
 
-## Creating a skill
+## 스킬 만들기
 
-### Capture Intent
+### 의도 파악
 
-Start by understanding the user's intent. The current conversation might already contain a workflow the user wants to capture (e.g., they say "turn this into a skill"). If so, extract answers from the conversation history first — the tools used, the sequence of steps, corrections the user made, input/output formats observed. The user may need to fill the gaps, and should confirm before proceeding to the next step.
+유저의 의도를 이해하는 것부터 시작한다. 현재 대화에 유저가 캡처하고 싶은 워크플로우가 이미 포함되어 있을 수 있다 (예: "이것을 스킬로 만들어줘"). 그렇다면 대화 기록에서 먼저 답을 추출한다 — 사용된 도구, 단계의 순서, 유저가 한 수정, 관찰된 입력/출력 형식. 유저가 공백을 채워야 할 수 있으며, 다음 단계로 진행하기 전에 확인해야 한다.
 
-1. What should this skill enable Claude to do?
-2. When should this skill trigger? (what user phrases/contexts)
-3. What's the expected output format?
-4. Should we set up test cases to verify the skill works? Skills with objectively verifiable outputs (file transforms, data extraction, code generation, fixed workflow steps) benefit from test cases. Skills with subjective outputs (writing style, art) often don't need them. Suggest the appropriate default based on the skill type, but let the user decide.
+1. 이 스킬은 AI가 무엇을 할 수 있게 해야 하는가?
+2. 이 스킬은 언제 트리거되어야 하는가? (어떤 유저 문구/컨텍스트)
+3. 기대하는 출력 형식은 무엇인가?
+4. 스킬이 작동하는지 확인하기 위한 테스트 케이스를 설정해야 하는가? 객관적으로 검증 가능한 출력이 있는 스킬(파일 변환, 데이터 추출, 코드 생성, 고정된 워크플로우 단계)은 테스트 케이스의 이점을 누린다. 주관적인 출력이 있는 스킬(글쓰기 스타일, 예술)은 종종 필요하지 않다. 스킬 유형에 따라 적절한 기본값을 제안하되, 유저가 결정하게 한다.
 
-### Interview and Research
+### 인터뷰 및 리서치
 
-Proactively ask questions about edge cases, input/output formats, example files, success criteria, and dependencies. Wait to write test prompts until you've got this part ironed out.
+엣지 케이스, 입력/출력 형식, 예시 파일, 성공 기준, 의존성에 대해 적극적으로 질문한다. 이 부분이 정리되기 전에 테스트 프롬프트를 작성하지 않는다.
 
-Check available MCPs - if useful for research (searching docs, finding similar skills, looking up best practices), research in parallel via subagents if available, otherwise inline. Come prepared with context to reduce burden on the user.
+사용 가능한 MCP를 확인한다 - 리서치에 유용하면 (문서 검색, 유사 스킬 찾기, 모범 사례 조회), 서브에이전트가 있으면 병렬로, 없으면 인라인으로 리서치한다. 유저의 부담을 줄이기 위해 컨텍스트를 준비한다.
 
-### Write the SKILL.md
+### SKILL.md 작성
 
-Based on the user interview, fill in these components:
+유저 인터뷰를 바탕으로 다음 구성 요소를 채운다:
 
-- **name**: Skill identifier
-- **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
-- **compatibility**: Required tools, dependencies (optional, rarely needed)
-- **the rest of the skill :)**
+- **name**: 스킬 식별자
+- **description**: 트리거 시점, 하는 일. 이것이 주요 트리거 메커니즘이다 - 스킬이 하는 것과 사용 시점에 대한 구체적인 컨텍스트를 모두 포함한다. 모든 "언제 사용할지" 정보는 여기에 들어가고, 본문에는 없다. 참고: 현재 AI는 스킬을 "과소 트리거"하는 경향이 있다 -- 유용할 때 사용하지 않는 경향이 있다. 이를 방지하기 위해 스킬 설명을 약간 "적극적으로" 만든다. 예를 들어 "내부 데이터를 표시하는 간단하고 빠른 대시보드를 만드는 방법" 대신 "내부 데이터를 표시하는 간단하고 빠른 대시보드를 만드는 방법. 유저가 대시보드, 데이터 시각화, 내부 지표를 언급하거나 어떤 종류의 회사 데이터도 표시하고 싶다고 할 때 '대시보드'를 명시적으로 요청하지 않더라도 이 스킬을 사용해야 한다."
+- **compatibility**: 필요한 도구, 의존성 (선택 사항, 거의 필요하지 않음)
+- **스킬의 나머지 내용 :)**
 
-### Skill Writing Guide
+### 스킬 작성 가이드
 
-#### Anatomy of a Skill
+#### 스킬의 구조
 
 ```
-skill-name/
-├── SKILL.md (required)
-│   ├── YAML frontmatter (name, description required)
-│   └── Markdown instructions
-└── Bundled Resources (optional)
-    ├── scripts/    - Executable code for deterministic/repetitive tasks
-    ├── references/ - Docs loaded into context as needed
-    └── assets/     - Files used in output (templates, icons, fonts)
+스킬-이름/
+├── SKILL.md (필수)
+│   ├── YAML frontmatter (name, description 필수)
+│   └── 마크다운 지침
+└── 번들된 리소스 (선택 사항)
+    ├── scripts/    - 결정론적/반복적 작업을 위한 실행 가능한 코드
+    ├── references/ - 필요에 따라 컨텍스트에 로드되는 문서
+    └── assets/     - 출력에 사용되는 파일 (템플릿, 아이콘, 폰트)
 ```
 
-#### Progressive Disclosure
+#### 점진적 공개
 
-Skills use a three-level loading system:
-1. **Metadata** (name + description) - Always in context (~100 words)
-2. **SKILL.md body** - In context whenever skill triggers (<500 lines ideal)
-3. **Bundled resources** - As needed (unlimited, scripts can execute without loading)
+스킬은 세 단계 로딩 시스템을 사용한다:
+1. **메타데이터** (name + description) - 항상 컨텍스트에 (~100 단어)
+2. **SKILL.md 본문** - 스킬이 트리거될 때마다 컨텍스트에 (<500줄 권장)
+3. **번들된 리소스** - 필요에 따라 (무제한, 스크립트는 로드 없이 실행 가능)
 
-These word counts are approximate and you can feel free to go longer if needed.
+이 단어 수는 대략적이며 필요하면 더 길게 작성해도 된다.
 
-**Key patterns:**
-- Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
-- Reference files clearly from SKILL.md with guidance on when to read them
-- For large reference files (>300 lines), include a table of contents
+**핵심 패턴:**
+- SKILL.md를 500줄 이하로 유지한다. 이 한계에 가까워지면 추가적인 계층 구조와 모델이 다음에 어디를 봐야 할지에 대한 명확한 포인터를 추가한다.
+- SKILL.md에서 언제 읽어야 할지 안내와 함께 파일을 명확히 참조한다
+- 큰 참조 파일 (>300줄)에는 목차를 포함한다
 
-**Domain organization**: When a skill supports multiple domains/frameworks, organize by variant:
+**도메인 구성**: 스킬이 여러 도메인/프레임워크를 지원할 때 변형별로 구성한다:
 ```
 cloud-deploy/
-├── SKILL.md (workflow + selection)
+├── SKILL.md (워크플로우 + 선택)
 └── references/
     ├── aws.md
     ├── gcp.md
     └── azure.md
 ```
-Claude reads only the relevant reference file.
+AI는 관련 참조 파일만 읽는다.
 
-#### Principle of Lack of Surprise
+#### 놀라움 없음의 원칙
 
-This goes without saying, but skills must not contain malware, exploit code, or any content that could compromise system security. A skill's contents should not surprise the user in their intent if described. Don't go along with requests to create misleading skills or skills designed to facilitate unauthorized access, data exfiltration, or other malicious activities. Things like a "roleplay as an XYZ" are OK though.
+당연한 말이지만, 스킬에는 악성코드, 익스플로잇 코드, 또는 시스템 보안을 위협할 수 있는 내용을 포함해서는 안 된다. 스킬의 내용은 설명했을 때 유저를 놀라게 하는 의도를 가져서는 안 된다. 오해를 불러일으키는 스킬이나 무단 접근, 데이터 유출, 기타 악의적인 활동을 용이하게 하는 스킬을 만들어 달라는 요청에 응하지 않는다. "XYZ로 롤플레이" 같은 것은 괜찮다.
 
-#### Writing Patterns
+#### 작성 패턴
 
-Prefer using the imperative form in instructions.
+지침에서 명령형을 사용하는 것을 선호한다.
 
-**Defining output formats** - You can do it like this:
+**출력 형식 정의** - 다음과 같이 할 수 있다:
 ```markdown
-## Report structure
-ALWAYS use this exact template:
-# [Title]
-## Executive summary
-## Key findings
-## Recommendations
+## 리포트 구조
+항상 이 정확한 템플릿을 사용한다:
+# [제목]
+## 요약
+## 주요 발견
+## 권장사항
 ```
 
-**Examples pattern** - It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):
+**예시 패턴** - 예시를 포함하는 것이 유용하다. 다음과 같이 형식화할 수 있다:
 ```markdown
-## Commit message format
-**Example 1:**
-Input: Added user authentication with JWT tokens
-Output: feat(auth): implement JWT-based authentication
+## 커밋 메시지 형식
+**예시 1:**
+입력: JWT 토큰으로 사용자 인증 추가
+출력: feat(auth): JWT 기반 인증 구현
 ```
 
-### Writing Style
+### 작성 스타일
 
-Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs. Use theory of mind and try to make the skill general and not super-narrow to specific examples. Start by writing a draft and then look at it with fresh eyes and improve it.
+무거운 "반드시" 대신 왜 중요한지를 모델에게 설명하려고 노력한다. 이론적 사고를 사용하고 스킬을 특정 예시에만 좁게 집중하지 않고 일반적으로 만들려고 노력한다. 초안을 작성한 후 신선한 눈으로 보고 개선한다.
 
-### Test Cases
+### 테스트 케이스
 
-After writing the skill draft, come up with 2-3 realistic test prompts — the kind of thing a real user would actually say. Share them with the user: [you don't have to use this exact language] "Here are a few test cases I'd like to try. Do these look right, or do you want to add more?" Then run them.
+스킬 초안 작성 후 2-3개의 현실적인 테스트 프롬프트를 생각한다 — 실제 유저가 실제로 말할 법한 것들. 유저와 공유한다: [정확히 이 언어를 사용할 필요는 없다] "시도해보고 싶은 몇 가지 테스트 케이스가 있어요. 맞아 보이나요, 아니면 더 추가하고 싶으신가요?" 그런 다음 실행한다.
 
-Save test cases to `evals/evals.json`. Don't write assertions yet — just the prompts. You'll draft assertions in the next step while the runs are in progress.
+테스트 케이스를 `evals/evals.json`에 저장한다. 아직 어설션은 작성하지 않는다 — 프롬프트만. 실행이 진행되는 동안 다음 단계에서 어설션을 초안 작성할 것이다.
 
 ```json
 {
-  "skill_name": "example-skill",
+  "skill_name": "예시-스킬",
   "evals": [
     {
       "id": 1,
-      "prompt": "User's task prompt",
-      "expected_output": "Description of expected result",
+      "prompt": "유저의 작업 프롬프트",
+      "expected_output": "기대하는 결과 설명",
       "files": []
     }
   ]
 }
 ```
 
-See `references/schemas.md` for the full schema (including the `assertions` field, which you'll add later).
+전체 스키마 (`assertions` 필드 포함, 나중에 추가할 것)는 `references/schemas.md`를 참고한다.
 
-## Running and evaluating test cases
+## 테스트 케이스 실행 및 평가
 
-This section is one continuous sequence — don't stop partway through. Do NOT use `/skill-test` or any other testing skill.
+이 섹션은 하나의 연속적인 순서이다 — 중간에 멈추지 않는다. `/skill-test` 또는 다른 테스트 스킬을 사용하지 않는다.
 
-Put results in `<skill-name>-workspace/` as a sibling to the skill directory. Within the workspace, organize results by iteration (`iteration-1/`, `iteration-2/`, etc.) and within that, each test case gets a directory (`eval-0/`, `eval-1/`, etc.). Don't create all of this upfront — just create directories as you go.
+결과를 스킬 디렉토리의 형제로 `<스킬-이름>-workspace/`에 저장한다. 워크스페이스 내에서 반복별로 (`iteration-1/`, `iteration-2/` 등), 그 내에서 각 테스트 케이스별로 (`eval-0/`, `eval-1/` 등) 결과를 구성한다. 이 모든 것을 미리 만들지 않는다 — 진행하면서 디렉토리를 만든다.
 
-### Step 1: Spawn all runs (with-skill AND baseline) in the same turn
+### 1단계: 같은 턴에 모든 실행 (스킬 있음과 기준선) 동시 시작
 
-For each test case, spawn two subagents in the same turn — one with the skill, one without. This is important: don't spawn the with-skill runs first and then come back for baselines later. Launch everything at once so it all finishes around the same time.
+각 테스트 케이스에 대해 같은 턴에 두 개의 서브에이전트를 시작한다 — 스킬 있는 것과 없는 것. 중요: 스킬 있는 실행을 먼저 시작하고 나중에 기준선으로 돌아오지 않는다. 모두 거의 동시에 완료되도록 한 번에 실행한다.
 
-**With-skill run:**
+**스킬 있는 실행:**
 
 ```
-Execute this task:
-- Skill path: <path-to-skill>
-- Task: <eval prompt>
-- Input files: <eval files if any, or "none">
-- Save outputs to: <workspace>/iteration-<N>/eval-<ID>/with_skill/outputs/
-- Outputs to save: <what the user cares about — e.g., "the .docx file", "the final CSV">
+이 작업을 실행한다:
+- 스킬 경로: <스킬-경로>
+- 작업: <평가 프롬프트>
+- 입력 파일: <평가 파일이 있으면, 없으면 "없음">
+- 출력 저장 위치: <워크스페이스>/iteration-<N>/eval-<ID>/with_skill/outputs/
+- 저장할 출력: <유저가 중요하게 여기는 것 — 예: ".docx 파일", "최종 CSV">
 ```
 
-**Baseline run** (same prompt, but the baseline depends on context):
-- **Creating a new skill**: no skill at all. Same prompt, no skill path, save to `without_skill/outputs/`.
-- **Improving an existing skill**: the old version. Before editing, snapshot the skill (`cp -r <skill-path> <workspace>/skill-snapshot/`), then point the baseline subagent at the snapshot. Save to `old_skill/outputs/`.
+**기준선 실행** (같은 프롬프트, 기준선은 컨텍스트에 따라 다름):
+- **새 스킬 만들기**: 스킬 전혀 없음. 같은 프롬프트, 스킬 경로 없음, `without_skill/outputs/`에 저장.
+- **기존 스킬 개선**: 이전 버전. 편집 전에 스킬 스냅샷 (`cp -r <스킬-경로> <워크스페이스>/skill-snapshot/`), 그런 다음 기준선 서브에이전트가 스냅샷을 가리키게 함. `old_skill/outputs/`에 저장.
 
-Write an `eval_metadata.json` for each test case (assertions can be empty for now). Give each eval a descriptive name based on what it's testing — not just "eval-0". Use this name for the directory too. If this iteration uses new or modified eval prompts, create these files for each new eval directory — don't assume they carry over from previous iterations.
+각 테스트 케이스에 대해 `eval_metadata.json`을 작성한다 (어설션은 지금은 비어 있어도 됨). 각 평가에 테스트하는 내용을 기반으로 설명적인 이름을 붙인다 — "eval-0"이 아닌 것으로. 이 이름을 디렉토리에도 사용한다. 이 반복이 새로운 또는 수정된 평가 프롬프트를 사용하는 경우, 각 새로운 평가 디렉토리에 대해 이 파일을 만든다 — 이전 반복에서 이어받는다고 가정하지 않는다.
 
 ```json
 {
   "eval_id": 0,
-  "eval_name": "descriptive-name-here",
-  "prompt": "The user's task prompt",
+  "eval_name": "설명적인-이름",
+  "prompt": "유저의 작업 프롬프트",
   "assertions": []
 }
 ```
 
-### Step 2: While runs are in progress, draft assertions
+### 2단계: 실행 진행 중 어설션 초안 작성
 
-Don't just wait for the runs to finish — you can use this time productively. Draft quantitative assertions for each test case and explain them to the user. If assertions already exist in `evals/evals.json`, review them and explain what they check.
+실행이 완료되기를 기다리지 않는다 — 이 시간을 생산적으로 사용할 수 있다. 각 테스트 케이스에 대한 정량적 어설션을 초안 작성하고 유저에게 설명한다. `evals/evals.json`에 어설션이 이미 있으면 검토하고 각각이 무엇을 확인하는지 설명한다.
 
-Good assertions are objectively verifiable and have descriptive names — they should read clearly in the benchmark viewer so someone glancing at the results immediately understands what each one checks. Subjective skills (writing style, design quality) are better evaluated qualitatively — don't force assertions onto things that need human judgment.
+좋은 어설션은 객관적으로 검증 가능하고 설명적인 이름을 가진다 — 벤치마크 뷰어에서 명확하게 읽혀야 하며, 결과를 훑어보는 사람이 각각이 무엇을 확인하는지 즉시 이해할 수 있어야 한다. 주관적인 스킬(글쓰기 스타일, 디자인 품질)은 정성적으로 평가하는 것이 낫다 — 인간의 판단이 필요한 것에 어설션을 강요하지 않는다.
 
-Update the `eval_metadata.json` files and `evals/evals.json` with the assertions once drafted. Also explain to the user what they'll see in the viewer — both the qualitative outputs and the quantitative benchmark.
+어설션이 초안 작성되면 `eval_metadata.json` 파일과 `evals/evals.json`을 업데이트한다. 또한 유저에게 뷰어에서 무엇을 보게 될지 설명한다 — 정성적 출력과 정량적 벤치마크 모두.
 
-### Step 3: As runs complete, capture timing data
+### 3단계: 실행 완료 시 타이밍 데이터 캡처
 
-When each subagent task completes, you receive a notification containing `total_tokens` and `duration_ms`. Save this data immediately to `timing.json` in the run directory:
+각 서브에이전트 작업이 완료되면 `total_tokens`와 `duration_ms`가 포함된 알림을 받는다. 즉시 실행 디렉토리의 `timing.json`에 이 데이터를 저장한다:
 
 ```json
 {
@@ -216,72 +214,72 @@ When each subagent task completes, you receive a notification containing `total_
 }
 ```
 
-This is the only opportunity to capture this data — it comes through the task notification and isn't persisted elsewhere. Process each notification as it arrives rather than trying to batch them.
+이것이 이 데이터를 캡처할 수 있는 유일한 기회이다 — 작업 알림을 통해 들어오며 다른 곳에 지속되지 않는다. 일괄 처리하려 하지 말고 각 알림이 도착하는 즉시 처리한다.
 
-### Step 4: Grade, aggregate, and launch the viewer
+### 4단계: 채점, 집계, 뷰어 실행
 
-Once all runs are done:
+모든 실행이 완료되면:
 
-1. **Grade each run** — spawn a grader subagent (or grade inline) that reads `agents/grader.md` and evaluates each assertion against the outputs. Save results to `grading.json` in each run directory. The grading.json expectations array must use the fields `text`, `passed`, and `evidence` (not `name`/`met`/`details` or other variants) — the viewer depends on these exact field names. For assertions that can be checked programmatically, write and run a script rather than eyeballing it — scripts are faster, more reliable, and can be reused across iterations.
+1. **각 실행 채점** — 채점자 서브에이전트를 시작하거나 (또는 인라인으로 채점) `agents/grader.md`를 읽고 각 어설션을 출력에 대해 평가한다. 각 실행 디렉토리의 `grading.json`에 결과를 저장한다. grading.json expectations 배열은 `text`, `passed`, `evidence` 필드를 사용해야 한다 (다른 변형이 아님) — 뷰어가 이 정확한 필드 이름에 의존한다. 프로그래밍 방식으로 확인할 수 있는 어설션의 경우 눈으로 확인하는 것보다 스크립트를 작성하고 실행한다 — 스크립트가 더 빠르고 신뢰할 수 있으며 반복에 재사용 가능하다.
 
-2. **Aggregate into benchmark** — run the aggregation script from the skill-creator directory:
+2. **벤치마크로 집계** — skill-creator 디렉토리에서 집계 스크립트 실행:
    ```bash
-   python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>
+   python -m scripts.aggregate_benchmark <워크스페이스>/iteration-N --skill-name <이름>
    ```
-   This produces `benchmark.json` and `benchmark.md` with pass_rate, time, and tokens for each configuration, with mean ± stddev and the delta. If generating benchmark.json manually, see `references/schemas.md` for the exact schema the viewer expects.
-Put each with_skill version before its baseline counterpart.
+   이것은 각 구성에 대한 pass_rate, time, tokens를 mean ± stddev와 delta로 `benchmark.json`과 `benchmark.md`를 생성한다. benchmark.json을 수동으로 생성하는 경우 뷰어가 기대하는 정확한 스키마는 `references/schemas.md`를 참고한다.
+   각 with_skill 버전을 기준선 대응 버전 앞에 놓는다.
 
-3. **Do an analyst pass** — read the benchmark data and surface patterns the aggregate stats might hide. See `agents/analyzer.md` (the "Analyzing Benchmark Results" section) for what to look for — things like assertions that always pass regardless of skill (non-discriminating), high-variance evals (possibly flaky), and time/token tradeoffs.
+3. **분석가 패스 실행** — 집계 통계가 숨길 수 있는 패턴을 파악한다. `agents/analyzer.md` ("벤치마크 결과 분석" 섹션)를 읽고 무엇을 찾아야 할지 확인 — 스킬에 관계없이 항상 통과하는 어설션(비구별적), 높은 변동성 평가(불안정할 수 있음), 시간/토큰 트레이드오프 같은 것들.
 
-4. **Launch the viewer** with both qualitative outputs and quantitative data:
+4. **정성적 출력과 정량적 데이터로 뷰어 실행:**
    ```bash
-   nohup python <skill-creator-path>/eval-viewer/generate_review.py \
-     <workspace>/iteration-N \
-     --skill-name "my-skill" \
-     --benchmark <workspace>/iteration-N/benchmark.json \
+   nohup python <skill-creator-경로>/eval-viewer/generate_review.py \
+     <워크스페이스>/iteration-N \
+     --skill-name "내-스킬" \
+     --benchmark <워크스페이스>/iteration-N/benchmark.json \
      > /dev/null 2>&1 &
    VIEWER_PID=$!
    ```
-   For iteration 2+, also pass `--previous-workspace <workspace>/iteration-<N-1>`.
+   2번째 반복 이상이면 `--previous-workspace <워크스페이스>/iteration-<N-1>`도 전달한다.
 
-   **Cowork / headless environments:** If `webbrowser.open()` is not available or the environment has no display, use `--static <output_path>` to write a standalone HTML file instead of starting a server. Feedback will be downloaded as a `feedback.json` file when the user clicks "Submit All Reviews". After download, copy `feedback.json` into the workspace directory for the next iteration to pick up.
+   **헤드리스 환경:** `webbrowser.open()`을 사용할 수 없거나 환경에 디스플레이가 없으면 서버를 시작하는 대신 `--static <출력-경로>`를 사용해 독립 실행형 HTML 파일을 작성한다. 유저가 "모든 리뷰 제출"을 클릭하면 피드백이 `feedback.json` 파일로 다운로드된다. 다운로드 후 다음 반복을 위해 `feedback.json`을 워크스페이스 디렉토리에 복사한다.
 
-Note: please use generate_review.py to create the viewer; there's no need to write custom HTML.
+   참고: 뷰어를 만들기 위해 generate_review.py를 사용한다; 커스텀 HTML을 작성할 필요가 없다.
 
-5. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
+5. **유저에게 알리기**: "브라우저에서 결과를 열었습니다. '출력' 탭에서 각 테스트 케이스를 클릭하고 피드백을 남길 수 있고, '벤치마크' 탭에서 정량적 비교를 볼 수 있습니다. 완료되면 돌아와서 알려주세요."
 
-### What the user sees in the viewer
+### 뷰어에서 유저가 보는 것
 
-The "Outputs" tab shows one test case at a time:
-- **Prompt**: the task that was given
-- **Output**: the files the skill produced, rendered inline where possible
-- **Previous Output** (iteration 2+): collapsed section showing last iteration's output
-- **Formal Grades** (if grading was run): collapsed section showing assertion pass/fail
-- **Feedback**: a textbox that auto-saves as they type
-- **Previous Feedback** (iteration 2+): their comments from last time, shown below the textbox
+"출력" 탭에는 한 번에 하나의 테스트 케이스가 표시된다:
+- **프롬프트**: 주어진 작업
+- **출력**: 스킬이 생성한 파일, 가능하면 인라인으로 렌더링
+- **이전 출력** (2번째 반복 이상): 마지막 반복의 출력을 보여주는 접힌 섹션
+- **공식 등급** (채점이 실행된 경우): 어설션 통과/실패를 보여주는 접힌 섹션
+- **피드백**: 입력하면 자동 저장되는 텍스트 상자
+- **이전 피드백** (2번째 반복 이상): 지난 번 의견, 텍스트 상자 아래에 표시
 
-The "Benchmark" tab shows the stats summary: pass rates, timing, and token usage for each configuration, with per-eval breakdowns and analyst observations.
+"벤치마크" 탭에는 통계 요약이 표시된다: 각 구성에 대한 통과율, 타이밍, 토큰 사용량, 평가별 분석과 분석가 관찰이 포함된다.
 
-Navigation is via prev/next buttons or arrow keys. When done, they click "Submit All Reviews" which saves all feedback to `feedback.json`.
+이전/다음 버튼 또는 화살표 키로 탐색한다. 완료 시 "모든 리뷰 제출"을 클릭하면 모든 피드백이 `feedback.json`에 저장된다.
 
-### Step 5: Read the feedback
+### 5단계: 피드백 읽기
 
-When the user tells you they're done, read `feedback.json`:
+유저가 완료했다고 알리면 `feedback.json`을 읽는다:
 
 ```json
 {
   "reviews": [
-    {"run_id": "eval-0-with_skill", "feedback": "the chart is missing axis labels", "timestamp": "..."},
+    {"run_id": "eval-0-with_skill", "feedback": "차트에 축 레이블이 없음", "timestamp": "..."},
     {"run_id": "eval-1-with_skill", "feedback": "", "timestamp": "..."},
-    {"run_id": "eval-2-with_skill", "feedback": "perfect, love this", "timestamp": "..."}
+    {"run_id": "eval-2-with_skill", "feedback": "완벽해, 이거 마음에 들어", "timestamp": "..."}
   ],
   "status": "complete"
 }
 ```
 
-Empty feedback means the user thought it was fine. Focus your improvements on the test cases where the user had specific complaints.
+빈 피드백은 유저가 괜찮다고 생각했다는 것을 의미한다. 유저가 구체적인 불만을 가진 테스트 케이스에 개선을 집중한다.
 
-Kill the viewer server when you're done with it:
+완료 시 뷰어 서버를 종료한다:
 
 ```bash
 kill $VIEWER_PID 2>/dev/null
@@ -289,179 +287,179 @@ kill $VIEWER_PID 2>/dev/null
 
 ---
 
-## Improving the skill
+## 스킬 개선하기
 
-This is the heart of the loop. You've run the test cases, the user has reviewed the results, and now you need to make the skill better based on their feedback.
+이것이 루프의 핵심이다. 테스트 케이스를 실행하고, 유저가 결과를 검토했으며, 이제 피드백을 바탕으로 스킬을 더 나게 만들어야 한다.
 
-### How to think about improvements
+### 개선에 대한 사고 방식
 
-1. **Generalize from the feedback.** The big picture thing that's happening here is that we're trying to create skills that can be used a million times (maybe literally, maybe even more who knows) across many different prompts. Here you and the user are iterating on only a few examples over and over again because it helps move faster. The user knows these examples in and out and it's quick for them to assess new outputs. But if the skill you and the user are codeveloping works only for those examples, it's useless. Rather than put in fiddly overfitty changes, or oppressively constrictive MUSTs, if there's some stubborn issue, you might try branching out and using different metaphors, or recommending different patterns of working. It's relatively cheap to try and maybe you'll land on something great.
+1. **피드백에서 일반화한다.** 여기서 일어나는 큰 그림은 수백만 번 (아마도 문자 그대로, 어쩌면 그보다 더) 다양한 프롬프트에 걸쳐 사용될 수 있는 스킬을 만들려고 한다는 것이다. 여기서는 더 빠르게 진행하는 데 도움이 되기 때문에 몇 가지 예시에 대해서만 반복한다. 유저는 이 예시들을 속속들이 알고 새 출력을 빠르게 평가할 수 있다. 그러나 만들어지는 스킬이 그 예시들에만 작동한다면 쓸모가 없다. 세세하게 과적합되는 변경이나 억압적으로 제한적인 "반드시"를 넣는 대신, 완고한 문제가 있다면 다른 은유를 사용하거나 다른 작업 패턴을 권장해본다. 시도하는 데 비용이 적게 들고 좋은 것을 찾을 수 있다.
 
-2. **Keep the prompt lean.** Remove things that aren't pulling their weight. Make sure to read the transcripts, not just the final outputs — if it looks like the skill is making the model waste a bunch of time doing things that are unproductive, you can try getting rid of the parts of the skill that are making it do that and seeing what happens.
+2. **프롬프트를 간결하게 유지한다.** 제 역할을 하지 않는 것들을 제거한다. 트랜스크립트를 꼭 읽어라, 최종 출력만이 아니라 — 스킬이 모델로 하여금 비생산적인 일에 많은 시간을 낭비하게 만든다면, 그렇게 만드는 스킬 부분을 제거하고 무슨 일이 일어나는지 보는 것을 시도한다.
 
-3. **Explain the why.** Try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are *smart*. They have good theory of mind and when given a good harness can go beyond rote instructions and really make things happen. Even if the feedback from the user is terse or frustrated, try to actually understand the task and why the user is writing what they wrote, and what they actually wrote, and then transmit this understanding into the instructions. If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag — if possible, reframe and explain the reasoning so that the model understands why the thing you're asking for is important. That's a more humane, powerful, and effective approach.
+3. **이유를 설명한다.** 모델에게 요청하는 모든 것의 **이유**를 설명하려고 열심히 노력한다. 오늘날의 AI는 *똑똑하다*. 좋은 이론적 사고를 가지고 있으며 좋은 프레임워크가 주어지면 단순한 지침 암기를 넘어 진정으로 일을 실현할 수 있다. 유저의 피드백이 간결하거나 좌절스럽더라도 작업과 유저가 쓴 것을 실제로 이해하고, 그들이 실제로 쓴 것을 이해하고, 이 이해를 지침에 전달하려고 노력한다. "항상" 또는 "절대"를 대문자로 쓰거나, 초경직된 구조를 사용하고 있다면 노란 신호 — 가능하면 다시 구성하고 왜 요청하는 것이 중요한지 이유를 설명한다. 그것이 더 인도적이고 강력하며 효과적인 접근 방식이다.
 
-4. **Look for repeated work across test cases.** Read the transcripts from the test runs and notice if the subagents all independently wrote similar helper scripts or took the same multi-step approach to something. If all 3 test cases resulted in the subagent writing a `create_docx.py` or a `build_chart.py`, that's a strong signal the skill should bundle that script. Write it once, put it in `scripts/`, and tell the skill to use it. This saves every future invocation from reinventing the wheel.
+4. **테스트 케이스 전반에서 반복 작업을 찾는다.** 테스트 실행의 트랜스크립트를 읽고 서브에이전트들이 모두 독립적으로 유사한 헬퍼 스크립트를 작성하거나 어떤 것에 대해 같은 다단계 접근 방식을 취했는지 알아챈다. 3개의 테스트 케이스가 모두 서브에이전트가 `create_docx.py`나 `build_chart.py`를 작성하는 결과를 낳았다면, 스킬이 해당 스크립트를 번들해야 한다는 강한 신호이다. 한 번 작성하고, `scripts/`에 넣고, 스킬에 사용하라고 알린다. 이렇게 하면 미래의 모든 호출이 바퀴를 재발명하지 않아도 된다.
 
-This task is pretty important (we are trying to create billions a year in economic value here!) and your thinking time is not the blocker; take your time and really mull things over. I'd suggest writing a draft revision and then looking at it anew and making improvements. Really do your best to get into the head of the user and understand what they want and need.
+이 작업은 꽤 중요하며 (경제적 가치를 만들려고 하고 있다!) 생각 시간이 병목이 아니다; 시간을 들여 충분히 고민한다. 초안 개정을 작성한 후 다시 새롭게 보고 개선하는 것을 권장한다. 유저의 머릿속에 들어가 그들이 원하고 필요한 것을 이해하려고 진심으로 노력한다.
 
-### The iteration loop
+### 반복 루프
 
-After improving the skill:
+스킬 개선 후:
 
-1. Apply your improvements to the skill
-2. Rerun all test cases into a new `iteration-<N+1>/` directory, including baseline runs. If you're creating a new skill, the baseline is always `without_skill` (no skill) — that stays the same across iterations. If you're improving an existing skill, use your judgment on what makes sense as the baseline: the original version the user came in with, or the previous iteration.
-3. Launch the reviewer with `--previous-workspace` pointing at the previous iteration
-4. Wait for the user to review and tell you they're done
-5. Read the new feedback, improve again, repeat
+1. 개선 사항을 스킬에 적용
+2. 새 `iteration-<N+1>/` 디렉토리에 기준선 실행을 포함해 모든 테스트 케이스 재실행. 새 스킬을 만드는 경우 기준선은 항상 `without_skill` (스킬 없음) — 반복에 걸쳐 동일하게 유지된다. 기존 스킬을 개선하는 경우 기준선으로 무엇이 합리적인지 판단한다: 유저가 가져온 원래 버전 또는 이전 반복.
+3. 이전 반복을 가리키는 `--previous-workspace`로 리뷰어 실행
+4. 유저가 검토하고 완료했다고 알릴 때까지 기다림
+5. 새 피드백 읽기, 다시 개선, 반복
 
-Keep going until:
-- The user says they're happy
-- The feedback is all empty (everything looks good)
-- You're not making meaningful progress
-
----
-
-## Advanced: Blind comparison
-
-For situations where you want a more rigorous comparison between two versions of a skill (e.g., the user asks "is the new version actually better?"), there's a blind comparison system. Read `agents/comparator.md` and `agents/analyzer.md` for the details. The basic idea is: give two outputs to an independent agent without telling it which is which, and let it judge quality. Then analyze why the winner won.
-
-This is optional, requires subagents, and most users won't need it. The human review loop is usually sufficient.
+다음 조건까지 계속:
+- 유저가 만족했다고 말함
+- 피드백이 모두 비어 있음 (모든 것이 좋아 보임)
+- 의미 있는 진전이 없음
 
 ---
 
-## Description Optimization
+## 고급: 블라인드 비교
 
-The description field in SKILL.md frontmatter is the primary mechanism that determines whether Claude invokes a skill. After creating or improving a skill, offer to optimize the description for better triggering accuracy.
+두 버전의 스킬 사이에서 더 엄격한 비교를 원하는 상황 (예: 유저가 "새 버전이 실제로 더 나은가?"라고 묻는 경우), 블라인드 비교 시스템이 있다. 세부 사항은 `agents/comparator.md`와 `agents/analyzer.md`를 읽는다. 기본 아이디어는: 두 출력을 어느 것이 어떤 것인지 말하지 않고 독립적인 에이전트에게 주고 품질을 판단하게 한다. 그런 다음 승자가 이긴 이유를 분석한다.
 
-### Step 1: Generate trigger eval queries
+이것은 선택 사항이고 서브에이전트가 필요하며, 대부분의 유저는 필요하지 않을 것이다. 인간 검토 루프는 보통 충분하다.
 
-Create 20 eval queries — a mix of should-trigger and should-not-trigger. Save as JSON:
+---
+
+## 설명 최적화
+
+SKILL.md frontmatter의 description 필드는 AI가 스킬을 호출할지 결정하는 주요 메커니즘이다. 스킬을 만들거나 개선한 후 더 나은 트리거 정확도를 위해 설명 최적화를 제안한다.
+
+### 1단계: 트리거 평가 쿼리 생성
+
+20개의 평가 쿼리를 만든다 — 트리거해야 하는 것과 하지 않아야 하는 것의 혼합. JSON으로 저장한다:
 
 ```json
 [
-  {"query": "the user prompt", "should_trigger": true},
-  {"query": "another prompt", "should_trigger": false}
+  {"query": "유저 프롬프트", "should_trigger": true},
+  {"query": "다른 프롬프트", "should_trigger": false}
 ]
 ```
 
-The queries must be realistic and something a Claude Code or Claude.ai user would actually type. Not abstract requests, but requests that are concrete and specific and have a good amount of detail. For instance, file paths, personal context about the user's job or situation, column names and values, company names, URLs. A little bit of backstory. Some might be in lowercase or contain abbreviations or typos or casual speech. Use a mix of different lengths, and focus on edge cases rather than making them clear-cut (the user will get a chance to sign off on them).
+쿼리는 현실적이어야 하고 실제 유저가 입력할 만한 것이어야 한다. 추상적인 요청이 아닌, 구체적이고 세부 사항이 있는 요청이어야 한다. 예를 들어 파일 경로, 유저의 직업이나 상황에 대한 개인적인 맥락, 컬럼 이름과 값, 회사 이름, URL. 약간의 배경 이야기. 일부는 소문자이거나 약어, 오타, 일상적인 말이 포함될 수 있다. 다양한 길이를 사용하고 명확한 것보다 엣지 케이스에 집중한다 (유저가 승인할 기회를 가질 것이다).
 
-Bad: `"Format this data"`, `"Extract text from PDF"`, `"Create a chart"`
+나쁜 예: `"이 데이터 형식화해줘"`, `"PDF에서 텍스트 추출해줘"`, `"차트 만들어줘"`
 
-Good: `"ok so my boss just sent me this xlsx file (its in my downloads, called something like 'Q4 sales final FINAL v2.xlsx') and she wants me to add a column that shows the profit margin as a percentage. The revenue is in column C and costs are in column D i think"`
+좋은 예: `"ok 제 상사가 방금 xlsx 파일을 보냈는데 (다운로드에 있어요, 'Q4 sales final FINAL v2.xlsx' 같은 이름) 수익 마진을 퍼센트로 보여주는 열을 추가하고 싶대요. 수익은 C열, 비용은 D열인 것 같아요"`
 
-For the **should-trigger** queries (8-10), think about coverage. You want different phrasings of the same intent — some formal, some casual. Include cases where the user doesn't explicitly name the skill or file type but clearly needs it. Throw in some uncommon use cases and cases where this skill competes with another but should win.
+**트리거해야 하는 쿼리** (8-10개)는 다양성을 생각한다. 같은 의도의 다른 표현 방식 — 일부는 공식적, 일부는 캐주얼. 유저가 스킬이나 파일 유형을 명시적으로 명명하지 않지만 명확히 필요로 하는 경우를 포함한다. 특이한 사용 사례와 이 스킬이 다른 스킬과 경쟁하지만 이겨야 하는 경우를 넣는다.
 
-For the **should-not-trigger** queries (8-10), the most valuable ones are the near-misses — queries that share keywords or concepts with the skill but actually need something different. Think adjacent domains, ambiguous phrasing where a naive keyword match would trigger but shouldn't, and cases where the query touches on something the skill does but in a context where another tool is more appropriate.
+**트리거하지 않아야 하는 쿼리** (8-10개)는 가장 가치 있는 것이 근접한 것들 — 스킬과 키워드나 개념을 공유하지만 실제로는 다른 것이 필요한 쿼리. 순진한 키워드 매칭이 트리거하겠지만 실제로는 안 해야 하는 인접 도메인, 모호한 표현, 스킬이 하는 것과 접점이 있지만 다른 도구가 더 적합한 경우를 생각한다.
 
-The key thing to avoid: don't make should-not-trigger queries obviously irrelevant. "Write a fibonacci function" as a negative test for a PDF skill is too easy — it doesn't test anything. The negative cases should be genuinely tricky.
+피해야 할 것: 트리거하지 않아야 하는 쿼리를 명백히 무관하게 만들지 않는다. PDF 스킬에 대한 "피보나치 함수 작성"은 너무 쉽다 — 아무것도 테스트하지 않는다. 부정적인 케이스는 진정으로 까다로워야 한다.
 
-### Step 2: Review with user
+### 2단계: 유저와 검토
 
-Present the eval set to the user for review using the HTML template:
+HTML 템플릿을 사용해 유저에게 평가 세트를 검토용으로 제시한다:
 
-1. Read the template from `assets/eval_review.html`
-2. Replace the placeholders:
-   - `__EVAL_DATA_PLACEHOLDER__` → the JSON array of eval items (no quotes around it — it's a JS variable assignment)
-   - `__SKILL_NAME_PLACEHOLDER__` → the skill's name
-   - `__SKILL_DESCRIPTION_PLACEHOLDER__` → the skill's current description
-3. Write to a temp file (e.g., `/tmp/eval_review_<skill-name>.html`) and open it: `open /tmp/eval_review_<skill-name>.html`
-4. The user can edit queries, toggle should-trigger, add/remove entries, then click "Export Eval Set"
-5. The file downloads to `~/Downloads/eval_set.json` — check the Downloads folder for the most recent version in case there are multiple (e.g., `eval_set (1).json`)
+1. `assets/eval_review.html`에서 템플릿 읽기
+2. 플레이스홀더 교체:
+   - `__EVAL_DATA_PLACEHOLDER__` → 평가 항목의 JSON 배열 (주석 없이 — JS 변수 할당)
+   - `__SKILL_NAME_PLACEHOLDER__` → 스킬 이름
+   - `__SKILL_DESCRIPTION_PLACEHOLDER__` → 현재 스킬 설명
+3. 임시 파일에 쓰기 (예: `/tmp/eval_review_<스킬-이름>.html`) 및 열기: `open /tmp/eval_review_<스킬-이름>.html`
+4. 유저가 쿼리 편집, 트리거 여부 토글, 항목 추가/제거 후 "평가 세트 내보내기" 클릭
+5. `~/Downloads/eval_set.json`으로 다운로드 — 여러 개인 경우 가장 최근 버전 확인 (예: `eval_set (1).json`)
 
-This step matters — bad eval queries lead to bad descriptions.
+이 단계가 중요하다 — 나쁜 평가 쿼리는 나쁜 설명으로 이어진다.
 
-### Step 3: Run the optimization loop
+### 3단계: 최적화 루프 실행
 
-Tell the user: "This will take some time — I'll run the optimization loop in the background and check on it periodically."
+유저에게 말한다: "시간이 걸릴 것입니다 — 백그라운드에서 최적화 루프를 실행하고 주기적으로 확인하겠습니다."
 
-Save the eval set to the workspace, then run in the background:
+평가 세트를 워크스페이스에 저장한 후 백그라운드에서 실행한다:
 
 ```bash
 python -m scripts.run_loop \
-  --eval-set <path-to-trigger-eval.json> \
-  --skill-path <path-to-skill> \
-  --model <provider/model-name> \
+  --eval-set <트리거-평가-경로.json> \
+  --skill-path <스킬-경로> \
+  --model <제공자/모델-이름> \
   --max-iterations 5 \
   --verbose
 ```
 
-Use the model in `provider/model-name` format matching the current OpenCode session (e.g. `anthropic/claude-sonnet-4-5`, `zhipu/glm-4`) so the triggering test matches what the user actually experiences.
+현재 OpenCode 세션과 일치하는 `제공자/모델-이름` 형식으로 모델을 사용한다 (예: `anthropic/claude-sonnet-4-5`, `zhipu/glm-4`) — 트리거링 테스트가 유저가 실제로 경험하는 것과 일치하도록.
 
-While it runs, periodically tail the output to give the user updates on which iteration it's on and what the scores look like.
+실행 중에 주기적으로 출력을 tail해서 유저에게 어떤 반복에 있는지, 점수가 어떤지 업데이트를 제공한다.
 
-This handles the full optimization loop automatically. It splits the eval set into 60% train and 40% held-out test, evaluates the current description (running each query 3 times to get a reliable trigger rate), then calls Claude to propose improvements based on what failed. It re-evaluates each new description on both train and test, iterating up to 5 times. When it's done, it opens an HTML report in the browser showing the results per iteration and returns JSON with `best_description` — selected by test score rather than train score to avoid overfitting.
+이것은 전체 최적화 루프를 자동으로 처리한다. 평가 세트를 60% 훈련과 40% 보류 테스트로 분할하고, 현재 설명을 평가하고 (각 쿼리를 3번 실행해 신뢰할 수 있는 트리거율 얻기), 실패한 것을 바탕으로 개선을 제안하기 위해 AI를 호출한다. 각 새 설명을 훈련과 테스트 모두에서 재평가하며 최대 5번 반복한다. 완료되면 결과를 보여주는 HTML 리포트를 브라우저에서 열고 `best_description`이 포함된 JSON을 반환한다 — 과적합을 피하기 위해 훈련 점수가 아닌 테스트 점수로 선택된다.
 
-### How skill triggering works
+### 스킬 트리거링 작동 방식
 
-Understanding the triggering mechanism helps design better eval queries. Skills appear in the AI's `available_skills` list with their name + description, and the AI decides whether to consult a skill based on that description. The important thing to know is that the AI only consults skills for tasks it can't easily handle on its own — simple, one-step queries like "read this PDF" may not trigger a skill even if the description matches perfectly, because the AI can handle them directly with basic tools. Complex, multi-step, or specialized queries reliably trigger skills when the description matches.
+트리거링 메커니즘을 이해하면 더 나은 평가 쿼리를 설계하는 데 도움이 된다. 스킬은 AI의 `available_skills` 목록에 이름 + 설명과 함께 나타나며, AI는 그 설명을 바탕으로 스킬을 참고할지 결정한다. 중요한 것은 AI가 스스로 쉽게 처리할 수 없는 작업에 대해서만 스킬을 참고한다는 것이다 — "이 PDF 읽어줘" 같은 단순하고 한 단계인 쿼리는 설명이 완벽히 일치하더라도 스킬을 트리거하지 않을 수 있는데, AI가 기본 도구로 직접 처리할 수 있기 때문이다. 복잡하고 다단계이며 전문화된 쿼리는 설명이 일치할 때 스킬을 신뢰할 수 있게 트리거한다.
 
-This means your eval queries should be substantive enough that the AI would actually benefit from consulting a skill. Simple queries like "read file X" are poor test cases — they won't trigger skills regardless of description quality.
+이것은 평가 쿼리가 AI가 실제로 스킬을 참고하면 이점을 얻을 만큼 충분히 실질적이어야 한다는 것을 의미한다. "파일 X 읽어줘" 같은 단순한 쿼리는 설명 품질에 관계없이 스킬을 트리거하지 않는다.
 
-### Step 4: Apply the result
+### 4단계: 결과 적용
 
-Take `best_description` from the JSON output and update the skill's SKILL.md frontmatter. Show the user before/after and report the scores.
+JSON 출력에서 `best_description`을 가져다 스킬의 SKILL.md frontmatter를 업데이트한다. 유저에게 변경 전/후를 보여주고 점수를 리포트한다.
 
 ---
 
-### Package and Present (only if `present_files` tool is available)
+### 패키지화 및 제시 (`present_files` 툴이 있는 경우에만)
 
-Check whether you have access to the `present_files` tool. If you don't, skip this step. If you do, package the skill and present the .skill file to the user:
+`present_files` 툴에 접근할 수 있는지 확인한다. 없으면 이 단계를 건너뛴다. 있으면 스킬을 패키지화하고 유저에게 .skill 파일을 제시한다:
 
 ```bash
-python -m scripts.package_skill <path/to/skill-folder>
+python -m scripts.package_skill <스킬-폴더-경로>
 ```
 
-After packaging, direct the user to the resulting `.skill` file path so they can install it.
+패키지화 후 유저가 설치할 수 있도록 결과 `.skill` 파일 경로를 알려준다.
 
 ---
 
-## OpenCode-specific instructions
+## OpenCode 특정 지침
 
-In OpenCode, the core workflow is the same (draft → test → review → improve → repeat). Here's what to keep in mind:
+OpenCode에서 핵심 워크플로우는 동일하다 (초안 → 테스트 → 검토 → 개선 → 반복). 참고 사항:
 
-**Running test cases**: OpenCode supports subagents, so the main workflow (spawn test cases in parallel, run baselines, grade, etc.) all works.
+**테스트 케이스 실행**: OpenCode는 서브에이전트를 지원하므로 주요 워크플로우(테스트 케이스 병렬 시작, 기준선 실행, 채점 등)가 모두 작동한다.
 
-**Reviewing results**: If there is no display available (headless server), use `--static <output_path>` when launching the eval viewer to write a standalone HTML file instead of starting a server. Then show the user the path so they can open it in their browser.
+**결과 검토**: 디스플레이가 없는 경우(헤드리스 서버), 서버를 시작하는 대신 eval 뷰어를 실행할 때 `--static <출력-경로>`를 사용해 독립 실행형 HTML 파일을 작성한다. 그런 다음 유저가 브라우저에서 열 수 있도록 경로를 보여준다.
 
-GENERATE THE EVAL VIEWER *BEFORE* evaluating inputs yourself using `generate_review.py`. You want to get results in front of the human ASAP before revising the skill.
+`generate_review.py`를 사용해 직접 입력을 평가하기 *전에* 평가 뷰어를 생성한다. 스킬을 수정하기 전에 가능한 빨리 결과를 인간에게 전달하고 싶다.
 
-**Description optimization**: Works via `opencode run --format json` subprocess — no external API key needed. The model format is `provider/model-name` (e.g. `zhipu/glm-4`, `anthropic/claude-sonnet-4-5`).
+**설명 최적화**: `opencode run --format json` 서브프로세스를 통해 작동 — 외부 API 키가 필요 없다. 모델 형식은 `제공자/모델-이름`이다 (예: `zhipu/glm-4`, `anthropic/claude-sonnet-4-5`).
 
-**Packaging**: The `package_skill.py` script works with Python and a filesystem. Run it and direct the user to the resulting `.skill` file.
+**패키지화**: `package_skill.py` 스크립트는 Python과 파일 시스템으로 작동한다. 실행하고 유저에게 결과 `.skill` 파일을 알려준다.
 
-**Updating an existing skill**: The user might be asking you to update an existing skill, not create a new one. In this case:
-- **Preserve the original name.** Note the skill's directory name and `name` frontmatter field — use them unchanged.
-- **Copy to a writeable location before editing.** The installed skill path may be read-only. Copy to `/tmp/skill-name/`, edit there, and package from the copy.
-- **If packaging manually, stage in `/tmp/` first**, then copy to the output directory — direct writes may fail due to permissions.
-
----
-
-## Reference files
-
-The agents/ directory contains instructions for specialized subagents. Read them when you need to spawn the relevant subagent.
-
-- `agents/grader.md` — How to evaluate assertions against outputs
-- `agents/comparator.md` — How to do blind A/B comparison between two outputs
-- `agents/analyzer.md` — How to analyze why one version beat another
-
-The references/ directory has additional documentation:
-- `references/schemas.md` — JSON structures for evals.json, grading.json, etc.
+**기존 스킬 업데이트**: 유저가 새로 만드는 것이 아니라 기존 스킬을 업데이트하도록 요청할 수 있다:
+- **원래 이름을 보존한다.** 스킬의 디렉토리 이름과 `name` frontmatter 필드를 파악한다 — 변경하지 않고 사용한다.
+- **편집 전에 쓸 수 있는 위치에 복사한다.** 설치된 스킬 경로가 읽기 전용일 수 있다. `/tmp/스킬-이름/`에 복사하고 거기서 편집한 후 복사본에서 패키지화한다.
+- **수동으로 패키지화하는 경우 먼저 `/tmp/`에 스테이징한다**, 그런 다음 출력 디렉토리에 복사한다 — 직접 쓰기는 권한 문제로 실패할 수 있다.
 
 ---
 
-Repeating one more time the core loop here for emphasis:
+## 참조 파일
 
-- Figure out what the skill is about
-- Draft or edit the skill
-- Run opencode-with-access-to-the-skill on test prompts
-- With the user, evaluate the outputs:
-  - Create benchmark.json and run `eval-viewer/generate_review.py` to help the user review them
-  - Run quantitative evals
-- Repeat until you and the user are satisfied
-- Package the final skill and return it to the user.
+agents/ 디렉토리에는 전문화된 서브에이전트를 위한 지침이 있다. 관련 서브에이전트를 시작해야 할 때 읽는다.
 
-Please add steps to your TodoList, if you have such a thing, to make sure you don't forget. Specifically put "Create evals JSON and run `eval-viewer/generate_review.py` so human can review test cases" in your TodoList to make sure it happens.
+- `agents/grader.md` — 출력에 대해 어설션을 평가하는 방법
+- `agents/comparator.md` — 두 출력 사이에서 블라인드 A/B 비교를 하는 방법
+- `agents/analyzer.md` — 한 버전이 다른 것을 이긴 이유를 분석하는 방법
 
-Good luck!
+references/ 디렉토리에는 추가 문서가 있다:
+- `references/schemas.md` — evals.json, grading.json 등의 JSON 구조
+
+---
+
+강조를 위해 핵심 루프를 한 번 더 반복한다:
+
+- 스킬이 무엇인지 파악
+- 스킬 초안 작성 또는 편집
+- 테스트 프롬프트로 스킬에 접근하는 AI 실행
+- 유저와 함께 출력 평가:
+  - benchmark.json을 만들고 `eval-viewer/generate_review.py`를 실행해 유저가 검토하도록 돕기
+  - 정량적 평가 실행
+- 유저와 만족할 때까지 반복
+- 최종 스킬을 패키지화하고 유저에게 반환
+
+할 일 목록이 있으면 단계를 추가해 잊지 않도록 한다. 특히 "평가 JSON 만들고 `eval-viewer/generate_review.py` 실행해 인간이 테스트 케이스를 검토할 수 있게 하기"를 할 일 목록에 넣어 반드시 이루어지게 한다.
+
+행운을 빈다!
